@@ -12,15 +12,15 @@ We have added support for:
 
 ## Project Structure
 
-```
+```sh
 CryptoShamirSecretSharing/
 ├── main.py                    # CLI entry point
 ├── core/                      # Core modules
-│   ├── __init__.py           # Module exports
-│   ├── field_math.py         # Finite field operations
-│   ├── image_utils.py        # Image loading/saving utilities
-│   ├── share_io.py           # Share file I/O with metadata
-│   └── shamir.py             # Shamir secret sharing logic
+│   ├── __init__.py            # Module exports
+│   ├── field_math.py          # Finite field operations
+│   ├── image_utils.py         # Image loading/saving utilities
+│   ├── share_io.py            # Share file I/O with metadata
+│   └── shamir.py              # Shamir secret sharing logic
 ├── view.py                    # Share visualization tool
 ├── verify.py                  # Image comparison tool
 ├── shamir_image_shares.py     # Legacy standalone implementation
