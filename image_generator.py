@@ -2,9 +2,9 @@
 Generates images with different patterns at different bit-depths for testing.
 
 # pattern: star, gradient, stripes
-# bit depths: 4, 8
+# bit depths: 1, 2, 4, 8
 
-Output should be PNG only, but if its 4 bit depth, save as 8 bit PNG with only 0-15 intensity values.
+Output should be PNG only, but if its 1, 2 or 4 bit depth, save as 8 bit PNG with only 0-1, 0-3 or 0-15 intensity values.
 
 Include a view function to visualize the generated images, especially ones at 4-bit depth.
 """
@@ -22,12 +22,12 @@ def generate_star_pattern(width=256, height=256, bit_depth=8):
     Args:
         width: Image width
         height: Image height
-        bit_depth: Bit depth (4 or 8)
+        bit_depth: Bit depth (1, 2, 4 or 8)
     
     Returns:
         numpy array with the star pattern
     """
-    max_val = (1 << bit_depth) - 1  # 15 for 4-bit, 255 for 8-bit
+    max_val = (1 << bit_depth) - 1  # 1 for 1-bit, 3 for 2-bit, 15 for 4-bit, 255 for 8-bit
     
     # Create coordinate grids
     y, x = np.ogrid[:height, :width]
@@ -61,12 +61,12 @@ def generate_gradient_pattern(width=256, height=256, bit_depth=8):
     Args:
         width: Image width
         height: Image height
-        bit_depth: Bit depth (4 or 8)
+        bit_depth: Bit depth (1, 2, 4 or 8)
     
     Returns:
         numpy array with the gradient pattern
     """
-    max_val = (1 << bit_depth) - 1  # 15 for 4-bit, 255 for 8-bit
+    max_val = (1 << bit_depth) - 1  # 1 for 1-bit, 3 for 2-bit, 15 for 4-bit, 255 for 8-bit
     
     # Create a diagonal gradient
     y, x = np.ogrid[:height, :width]
@@ -87,13 +87,13 @@ def generate_stripes_pattern(width=256, height=256, bit_depth=8, num_stripes=8):
     Args:
         width: Image width
         height: Image height
-        bit_depth: Bit depth (4 or 8)
+        bit_depth: Bit depth (1, 2, 4 or 8)
         num_stripes: Number of vertical stripes
     
     Returns:
         numpy array with the stripes pattern
     """
-    max_val = (1 << bit_depth) - 1  # 15 for 4-bit, 255 for 8-bit
+    max_val = (1 << bit_depth) - 1  # 1 for 1-bit, 3 for 2-bit, 15 for 4-bit, 255 for 8-bit
     
     # Create vertical stripes
     x = np.arange(width)
@@ -112,15 +112,23 @@ def generate_stripes_pattern(width=256, height=256, bit_depth=8, num_stripes=8):
 def save_image(pattern, filename, bit_depth=8):
     """
     Save the pattern as a PNG image.
+    For 1-bit depth, saves as 8-bit PNG with values limited to 0-1.
+    For 2-bit depth, saves as 8-bit PNG with values limited to 0-3.
     For 4-bit depth, saves as 8-bit PNG with values limited to 0-15.
     
     Args:
         pattern: numpy array containing the image data
         filename: output filename
-        bit_depth: bit depth of the image (4 or 8)
+        bit_depth: bit depth of the image (1, 2, 4 or 8)
     """
     # Ensure the pattern is in the correct range
-    if bit_depth == 4:
+    if bit_depth == 1:
+        # Clamp values to 0-1 range for 1-bit (binary)
+        pattern = np.clip(pattern, 0, 1)
+    elif bit_depth == 2:
+        # Clamp values to 0-3 range for 2-bit
+        pattern = np.clip(pattern, 0, 3)
+    elif bit_depth == 4:
         # Clamp values to 0-15 range for 4-bit
         pattern = np.clip(pattern, 0, 15)
     
@@ -132,7 +140,9 @@ def save_image(pattern, filename, bit_depth=8):
 
 def view_image(filename):
     """
-    View an image with proper rescaling for 4-bit images.
+    View an image with proper rescaling for 1-bit, 2-bit and 4-bit images.
+    1-bit images (values 0-1) are rescaled to 0-255 for proper visualization.
+    2-bit images (values 0-3) are rescaled to 0-255 for proper visualization.
     4-bit images (values 0-15) are rescaled to 0-255 for proper visualization.
     
     Args:
@@ -141,12 +151,20 @@ def view_image(filename):
     img = Image.open(filename)
     img_array = np.array(img)
     
-    # Detect if it's 4-bit
+    # Detect if it's 1-bit, 2-bit or 4-bit
     unique_vals = np.unique(img_array)
+    is_1bit = len(unique_vals) <= 2 and np.max(img_array) <= 1
+    is_2bit = len(unique_vals) <= 4 and np.max(img_array) <= 3
     is_4bit = len(unique_vals) <= 16 and np.max(img_array) <= 15
     
-    # Create display array - rescale 4-bit to 0-255 for visualization
-    if is_4bit:
+    # Create display array - rescale 1-bit, 2-bit or 4-bit to 0-255 for visualization
+    if is_1bit:
+        display_array = (img_array * 255).astype(np.uint8)  # 1 * 255 = 255
+        bit_info = "1-bit (rescaled 0-1 → 0-255 for display)"
+    elif is_2bit:
+        display_array = (img_array * 85).astype(np.uint8)  # 3 * 85 = 255
+        bit_info = "2-bit (rescaled 0-3 → 0-255 for display)"
+    elif is_4bit:
         display_array = (img_array * 17).astype(np.uint8)  # 15 * 17 = 255
         bit_info = "4-bit (rescaled 0-15 → 0-255 for display)"
     else:
@@ -157,7 +175,6 @@ def view_image(filename):
     # Show rescaled image
     im = plt.imshow(display_array, cmap='gray', vmin=0, vmax=255)
     plt.title(f'{filename}\n{bit_info}')
-    plt.axis('off')
     plt.tight_layout()
     plt.show()
 
@@ -171,7 +188,7 @@ Examples:
   # Generate a single image
   python image_generator.py --generate --pattern star --bit-depth 4 --output star.png
   
-  # View an image (rescales 4-bit to 0-255 for proper visualization)
+  # View an image (rescales 1-bit to 0-255, 2-bit to 0-255 and 4-bit to 0-255 for proper visualization)
   python image_generator.py --view star.png
   
   # Generate with custom size
@@ -201,8 +218,8 @@ Examples:
     parser.add_argument(
         '--bit-depth',
         type=int,
-        choices=[4, 8],
-        help='Bit depth: 4 or 8 (required with --generate)'
+        choices=[1, 2, 4, 8],
+        help='Bit depth: 1, 2, 4 or 8 (required with --generate)'
     )
     
     parser.add_argument(

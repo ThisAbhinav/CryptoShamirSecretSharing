@@ -21,14 +21,18 @@ def detect_image_properties(img_array):
             - 'min_value': Minimum pixel intensity value
             - 'recommended_prime': Recommended prime for finite field
             - 'shape': Original shape of the image
-            - 'bit_depth': Detected bit depth (4, 8, 16, etc.)
+            - 'bit_depth': Detected bit depth (1, 2, 4, 8, 16, etc.)
     """
     mode = 'grayscale' if img_array.ndim == 2 else 'rgb'
     max_val = int(np.max(img_array))
     min_val = int(np.min(img_array))
     
     # Detect bit depth based on max value
-    if max_val <= 15:
+    if max_val <= 1:
+        bit_depth = 1  # 1-bit (0-1, binary)
+    elif max_val <= 3:
+        bit_depth = 2  # 2-bit (0-3)
+    elif max_val <= 15:
         bit_depth = 4  # 4-bit (0-15)
     elif max_val <= 255:
         bit_depth = 8  # 8-bit (0-255)
